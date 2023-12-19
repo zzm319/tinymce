@@ -87,8 +87,8 @@ const fireAutocompleterEnd = (editor: Editor): void => {
   editor.dispatch('AutocompleterEnd');
 };
 
-const firePastePreProcess = (editor: Editor, html: string, internal: boolean): EditorEvent<PastePreProcessEvent> =>
-  editor.dispatch('PastePreProcess', { content: html, internal });
+const firePastePreProcess = (editor: Editor, html: string, internal: boolean,event?:ClipboardEvent|DragEvent): EditorEvent<PastePreProcessEvent> =>
+  editor.dispatch('PastePreProcess', { content: html, internal,__event:event });
 
 const firePastePostProcess = (editor: Editor, node: HTMLElement, internal: boolean): EditorEvent<PastePostProcessEvent> =>
   editor.dispatch('PastePostProcess', { node, internal });

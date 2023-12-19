@@ -32,8 +32,8 @@ const postProcessFilter = (editor: Editor, html: string, internal: boolean): Pro
   return processResult(postProcessArgs.node.innerHTML, postProcessArgs.isDefaultPrevented());
 };
 
-const filterContent = (editor: Editor, content: string, internal: boolean): ProcessResult => {
-  const preProcessArgs = Events.firePastePreProcess(editor, content, internal);
+const filterContent = (editor: Editor, content: string, internal: boolean,event?:ClipboardEvent|DragEvent): ProcessResult => {
+  const preProcessArgs = Events.firePastePreProcess(editor, content, internal,event);
 
   // Filter the content to remove potentially dangerous content (eg scripts)
   const filteredContent = preProcess(editor, preProcessArgs.content);
@@ -45,8 +45,8 @@ const filterContent = (editor: Editor, content: string, internal: boolean): Proc
   }
 };
 
-const process = (editor: Editor, html: string, internal: boolean): ProcessResult => {
-  return filterContent(editor, html, internal);
+const process = (editor: Editor, html: string, internal: boolean,event?:ClipboardEvent|DragEvent): ProcessResult => {
+  return filterContent(editor, html, internal,event);
 };
 
 export {

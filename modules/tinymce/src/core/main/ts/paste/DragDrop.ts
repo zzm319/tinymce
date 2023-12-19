@@ -127,9 +127,9 @@ const setup = (editor: Editor, draggingInternallyState: Cell<boolean>): void => 
           const trimmedContent = PasteUtils.trimHtml(content);
 
           if (dropContent['text/html']) {
-            Clipboard.pasteHtml(editor, trimmedContent, internal, true);
+            Clipboard.pasteHtml(editor, trimmedContent, internal, true,e);
           } else {
-            Clipboard.pasteText(editor, trimmedContent, true);
+            Clipboard.pasteText(editor, trimmedContent, true,e);
           }
         });
       });

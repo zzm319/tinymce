@@ -38,8 +38,8 @@ const createPasteDataTransfer = (html: string): DataTransfer => {
   return dataTransfer;
 };
 
-const doPaste = (editor: Editor, content: string, internal: boolean, pasteAsText: boolean, shouldSimulateInputEvent: boolean): void => {
-  const res = ProcessFilters.process(editor, content, internal);
+const doPaste = (editor: Editor, content: string, internal: boolean, pasteAsText: boolean, shouldSimulateInputEvent: boolean,event?:ClipboardEvent|DragEvent): void => {
+  const res = ProcessFilters.process(editor, content, internal,event);
   if (!res.cancelled) {
     const content = res.content;
     const doPasteAction = () => SmartPaste.insertContent(editor, content, pasteAsText);
@@ -60,20 +60,20 @@ const doPaste = (editor: Editor, content: string, internal: boolean, pasteAsText
  * inserted at the current selection in the editor. It will also fire paste events
  * for custom user filtering.
  */
-const pasteHtml = (editor: Editor, html: string, internalFlag: boolean, shouldSimulateInputEvent: boolean): void => {
+const pasteHtml = (editor: Editor, html: string, internalFlag: boolean, shouldSimulateInputEvent: boolean,event?:ClipboardEvent|DragEvent): void => {
   const internal = internalFlag ? internalFlag : InternalHtml.isMarked(html);
-  doPaste(editor, InternalHtml.unmark(html), internal, false, shouldSimulateInputEvent);
+  doPaste(editor, InternalHtml.unmark(html), internal, false, shouldSimulateInputEvent,event);
 };
 
 /*
  * Pastes the specified text. This means that the plain text is processed
  * and converted into BR and P elements. It will fire paste events for custom filtering.
  */
-const pasteText = (editor: Editor, text: string, shouldSimulateInputEvent: boolean): void => {
+const pasteText = (editor: Editor, text: string, shouldSimulateInputEvent: boolean,event?:ClipboardEvent|DragEvent): void => {
   const encodedText = editor.dom.encode(text).replace(/\r\n/g, '\n');
   const normalizedText = Whitespace.normalize(encodedText, Options.getPasteTabSpaces(editor));
   const html = Newlines.toBlockElements(normalizedText, Options.getForcedRootBlock(editor), Options.getForcedRootBlockAttrs(editor));
-  doPaste(editor, html, false, true, shouldSimulateInputEvent);
+  doPaste(editor, html, false, true, shouldSimulateInputEvent,event);
 };
 
 /*
@@ -118,7 +118,7 @@ const createBlobInfo = (editor: Editor, blobCache: BlobCache, file: File, base64
   return blobInfo;
 };
 
-const pasteImage = (editor: Editor, imageItem: FileResult): void => {
+const pasteImage = (editor: Editor, imageItem: FileResult,event?:ClipboardEvent|DragEvent): void => {
   Conversions.parseDataUri(imageItem.uri).each(({ data, type, base64Encoded }) => {
     const base64 = base64Encoded ? data : btoa(data);
     const file = imageItem.file;
@@ -128,7 +128,7 @@ const pasteImage = (editor: Editor, imageItem: FileResult): void => {
     const existingBlobInfo = blobCache.getByData(base64, type);
     const blobInfo = existingBlobInfo ?? createBlobInfo(editor, blobCache, file, base64);
 
-    pasteHtml(editor, `<img src="${blobInfo.blobUri()}">`, false, true);
+    pasteHtml(editor, `<img src="${blobInfo.blobUri()}">`, false, true,event);
   });
 };
 
@@ -174,7 +174,7 @@ const pasteImageData = (editor: Editor, e: ClipboardEvent | DragEvent, rng: Rang
         }
 
         Arr.each(fileResults, (result) => {
-          pasteImage(editor, result);
+          pasteImage(editor, result,e);
         });
       });
 
@@ -193,7 +193,7 @@ const isBrokenAndroidClipboardEvent = (e: ClipboardEvent): boolean =>
 const isKeyboardPasteEvent = (e: KeyboardEvent): boolean =>
   (VK.metaKeyPressed(e) && e.keyCode === 86) || (e.shiftKey && e.keyCode === 45);
 
-const insertClipboardContent = (editor: Editor, clipboardContent: ClipboardContents, html: string, plainTextMode: boolean, shouldSimulateInputEvent: boolean): void => {
+const insertClipboardContent = (editor: Editor, clipboardContent: ClipboardContents, html: string, plainTextMode: boolean, shouldSimulateInputEvent: boolean,event?:ClipboardEvent|DragEvent): void => {
   let content = PasteUtils.trimHtml(html);
 
   const isInternal = hasContentType(clipboardContent, InternalHtml.internalHtmlMime()) || InternalHtml.isMarked(html);
@@ -224,9 +224,9 @@ const insertClipboardContent = (editor: Editor, clipboardContent: ClipboardConte
   }
 
   if (plainTextMode) {
-    pasteText(editor, content, shouldSimulateInputEvent);
+    pasteText(editor, content, shouldSimulateInputEvent,event);
   } else {
-    pasteHtml(editor, content, isInternal, shouldSimulateInputEvent);
+    pasteHtml(editor, content, isInternal, shouldSimulateInputEvent,event);
   }
 };
 
@@ -258,7 +258,7 @@ const registerEventHandlers = (editor: Editor, pasteBin: PasteBin, pasteFormat: 
     // If the clipboard API has HTML then use that directly
     if (hasContentType(clipboardContent, 'text/html')) {
       e.preventDefault();
-      insertClipboardContent(editor, clipboardContent, clipboardContent['text/html'], plainTextMode, true);
+      insertClipboardContent(editor, clipboardContent, clipboardContent['text/html'], plainTextMode, true,e);
     } else if (hasContentType(clipboardContent, 'text/plain') && hasContentType(clipboardContent, 'text/uri-list')) {
       /*
       Safari adds the uri-list attribute to links copied within it.
@@ -266,7 +266,7 @@ const registerEventHandlers = (editor: Editor, pasteBin: PasteBin, pasteFormat: 
       This causes issues. To solve this we bypass the default paste functionality for this situation.
        */
       e.preventDefault();
-      insertClipboardContent(editor, clipboardContent, clipboardContent['text/plain'], plainTextMode, true);
+      insertClipboardContent(editor, clipboardContent, clipboardContent['text/plain'], plainTextMode, true,e);
     } else {
       // We can't extract the HTML content from the clipboard so we need to allow the paste
       // to run via the pastebin and then extract from there
@@ -275,7 +275,7 @@ const registerEventHandlers = (editor: Editor, pasteBin: PasteBin, pasteFormat: 
         // Get the pastebin content and then remove it so the selection is restored
         const html = pasteBin.getHtml();
         pasteBin.remove();
-        insertClipboardContent(editor, clipboardContent, html, plainTextMode, false);
+        insertClipboardContent(editor, clipboardContent, html, plainTextMode, false,e);
       }, 0);
     }
   });
